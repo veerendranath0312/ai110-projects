@@ -1,1 +1,1 @@
-# ai110-projects
+# AI110 Projects
