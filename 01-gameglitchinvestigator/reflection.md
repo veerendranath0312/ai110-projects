@@ -40,11 +40,9 @@ Document at least 3 bugs you found. Add rows as needed.
 
 **A suggestion I did not accept as written**
 
-_TODO: fill this in with a real example. Ideas from this session: Claude's Step 3 fix restarted `attempts` at 1 to match startup, which kept the bug where Easy ends after 5 guesses instead of 6; or a fix whose layout or approach you'd change._
-
-- **What the AI suggested:**
-- **Why I rejected or changed it:**
-- **How I verified my version:**
+- **What the AI suggested:** To fix New Game (bug 3), Claude reset `attempts` to 1 "to match the value the game uses when it first loads". It pointed out that starting at 1 was itself an off-by-one bug, but suggested leaving it for a later step.
+- **Why I changed it:** Matching the startup value made New Game consistent, but it kept the bug in both places: "Attempts left" showed one fewer than allowed, and on Easy the game ended after 5 guesses instead of 6. Claude's own app test showed this. Leaving a known bug in my fix didn't make sense when the correct fix was this small. I changed both places to start at 0, so the counter only goes up when you make a valid guess.
+- **How I verified my version:** `pytest` still passes (6 tests). In Streamlit's test tool I played each difficulty until the game ended: Easy now starts at "Attempts left: 6" and ends after 6 guesses, Normal after 8 and Hard after 5, which matches the limits in the sidebar. After New Game the full count comes back. A side effect: winning on the first guess now scores 80 instead of 70, because the score formula uses the attempt number.
 
 ---
 
@@ -60,7 +58,7 @@ _TODO: fill this in with a real example. Ideas from this session: Claude's Step 
 **Tests I ran:**
 
 - **pytest:** First we moved the game logic into `logic_utils.py` so it could be tested. The original tests only checked the outcome ("Too High"), not the message, which is why they never caught the backwards hints. We added tests for that: `check_guess(20, 13)` must say LOWER and `check_guess(5, 13)` must say HIGHER. We also added `check_guess(9, 13)`, which must be "Too Low" because, compared as text, `"9" > "13"`. Final result: `6 passed`.
-- **Streamlit's test tool (`AppTest`):** Claude used it to play the app from a script with the secret set to 13. It showed that 9 is now treated as "Too Low" on every attempt (the score dropped by 5 each time instead of going up and down), that New Game after a win or loss gives a playable game with score 0 and an empty history, and that 10 empty submits leave "Attempts left" unchanged. It also showed something pytest can't: on Easy the game ended after 5 guesses instead of 6, a bug that's still open.
+- **Streamlit's test tool (`AppTest`):** Claude used it to play the app from a script with the secret set to 13. It showed that 9 is now treated as "Too Low" on every attempt (the score dropped by 5 each time instead of going up and down), that New Game after a win or loss gives a playable game with score 0 and an empty history, and that 10 empty submits leave "Attempts left" unchanged. It also showed something pytest can't: on Easy the game ended after 5 guesses instead of 6. After I changed attempts to start at 0, Easy, Normal and Hard each allowed exactly their limit (6, 8 and 5).
 - **Playing in the browser:** After the hint fix, guesses moved toward the secret correctly. Playing is also how I found the bugs where empty guesses drove attempts negative, the input box wasn't cleared, and Submit needed two clicks. I confirmed the Submit fix in the browser myself.
 
 **How AI helped with testing:** Claude suggested testing the hint message, not just the outcome, and explained why the original tests missed bug 1. It was also clear about the limits of each test. The `check_guess(9, 13)` test can't catch `app.py` turning the secret into text, and its test tool can't recreate the browser's timing, so for those it told me to rely on the app test and on my own play-through.
@@ -84,6 +82,6 @@ A Streamlit app is a Python script that runs again from top to bottom every time
 
 **A habit to reuse:** Fix one bug at a time, and for each one: reproduce it, make the smallest change, add a test that checks the actual behavior (the message, not just the outcome), play through it again, then commit. Working in small steps made each fix easy to understand and to check, and when something new broke I knew which change caused it. Asking the AI for a plan first and approving one step at a time kept me in control of what changed.
 
-**What I'd do differently:** I'd question the AI's choices more instead of just accepting them. For example, in the New Game fix it chose to restart attempts at 1 "to match startup", which kept the bug where you get one guess fewer than allowed. I'd also test in the real browser earlier, because the AI's test tool couldn't reproduce the Submit bug that I found by playing.
+**What I'd do differently:** I'd question the AI's choices more instead of just accepting them. For example, in the New Game fix it chose to restart attempts at 1 "to match startup", which kept the bug where you get one guess fewer than allowed. I only fixed it after seeing it in the test results. I'd also test in the real browser earlier, because the AI's test tool couldn't reproduce the Submit bug that I found by playing.
 
 **How my thinking changed:** AI-generated code can look finished and run without a single error and still be wrong in several places, because none of these bugs crashed; they just gave wrong answers. Now I treat AI code as a draft that I have to prove works by testing and playing it, not as something that's correct because it runs.

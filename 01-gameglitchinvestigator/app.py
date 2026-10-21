@@ -37,8 +37,10 @@ st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
+# FIX: Claude's New Game fix restarted attempts at 1 to match this line, which kept a bug
+# (Easy ended after 5 guesses, not 6). I changed both places to 0 so every attempt counts.
 if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
+    st.session_state.attempts = 0
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -81,7 +83,7 @@ with col2:
 if new_game:
     # FIX: Claude found that New Game never reset status/score/history and ignored difficulty;
     # I found the input box wasn't cleared, and Claude added the pop() below to clear it.
-    st.session_state.attempts = 1
+    st.session_state.attempts = 0
     st.session_state.secret = random.randint(low, high)
     st.session_state.score = 0
     st.session_state.status = "playing"
